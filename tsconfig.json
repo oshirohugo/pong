@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noFallthroughCasesInSwitch": true,
+    "strictNullChecks": true,
+    "module": "commonjs",
+    "target": "es5",
+    "lib": ["es2015", "es2017", "esnext", "dom", "dom.iterable"],
+    "removeComments": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "baseUrl": "./",
+    "esModuleInterop": true
+  },
+  "include": ["./src"]
+}

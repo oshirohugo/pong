@@ -1,0 +1,5 @@
+**/webpack.config.js
+*.d.ts
+*.map
+*.js
+*.json

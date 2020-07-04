@@ -1,0 +1,65 @@
+html {
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+ul {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 1em;
+  text-indent: -1em;
+}
+
+body {
+  margin: 0;
+  font-weight: 500;
+  font-family: 'Orbitron';
+  display: grid;
+  justify-items: center;
+  background-color: #040404;
+  color: #ffffff;
+  height: 100%;
+}
+
+#menu {
+  display: grid;
+  justify-items: center;
+}
+
+#title {
+  align-self: end;
+}
+
+#container {
+  display: none;
+}
+
+.selector {
+  width: 10px;
+  height: 10px;
+  background-color: #040404;
+  display: inline-block;
+  margin-right: 9px;
+  border-radius: 50%;
+  animation: bounce 0.9s infinite;
+}
+
+@keyframes bounce {
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.select-item {
+  margin-bottom: 12px;
+}
+
+.selected-item .selector {
+  background-color: #ffffff;
+}
