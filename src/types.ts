@@ -17,7 +17,6 @@ export type GameState = {
     lastProcessedInput: number;
   }[];
   ball: Pos;
-  speed: number;
   serverUpdateRate: number;
   lastPlayerId: number;
 };

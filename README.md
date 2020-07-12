@@ -1,8 +1,8 @@
 # Pong game
 
-This is a simple pong game. it works together with a pong server. If you want to see it live, go to this [url](http://www.students.ic.unicamp.br/~ra146446/)
+This is a simple pong game. it works together with a pong server. If you want to see it live, go to this [url](TODO)
 
-![snake gif](screenshot.gif)
+![pong gif](screenshot.gif)
 
 ## Running app
 

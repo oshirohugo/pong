@@ -7,7 +7,6 @@ import Player from './player';
 import Ball from './ball';
 import { Rect } from 'konva/types/shapes/Rect';
 import {
-  INITIAL_SPEED,
   TEXT_COLOR,
   BACKGROUND_COLOR,
   LOOP_PERIOD,
@@ -20,23 +19,19 @@ import {
   FPS,
 } from './game-params';
 import KeysListener from './keys-listener';
-import { Pos, Input, GameState } from './types';
-import Client from './client';
-import Message from './message';
+import { Input, GameState } from './types';
+import oscillator from './oscilattor';
 
 class Game {
   private stage: Stage;
   private layer: Layer;
   private title: Text;
   private scoreBoard: Text;
-  private loading: Text;
+  private waiting: Text;
   private shadowLayer: Rect;
 
   private gameStart: boolean = false;
-  private speed: number;
   private control: { up: boolean; down: boolean } = { up: false, down: false };
-  private pressTime: number;
-  private inputSequenceNumber: number;
   private pendingInputs: Input[] = [];
   private onInput: (arg: any) => void;
   private serverUpdateRate = FPS;
@@ -94,8 +89,19 @@ class Game {
       fill: TEXT_COLOR,
     });
 
+    this.waiting = new Konva.Text({
+      x: this.stage.width() / 2 - 120,
+      y: this.stage.height() / 2,
+      text: 'Waiting for opponent',
+      fontSize: 20,
+      fontFamily: 'Orbitron',
+      fill: TEXT_COLOR,
+    });
+
     this.layer.add(backGround);
-    this.gameOver();
+    this.layer.add(this.title);
+    this.layer.add(this.scoreBoard);
+
     this.stage.add(this.layer);
     this.startKeyListener();
   }
@@ -116,18 +122,8 @@ class Game {
     this.control.down = eventType === 'keydown';
   }
 
-  private gameOver() {
-    if (this.player) {
-      this.player.die();
-    }
-    this.gameStart = false;
-    this.layer.add(this.title);
-    this.layer.add(this.scoreBoard);
-  }
-
   private processInput(elapsed: number) {
     // return if no input
-
     if (!this.control.down && !this.control.up) {
       return;
     }
@@ -168,27 +164,24 @@ class Game {
         this.ball.destroy();
       }
 
-      const {
-        players: remotePlayers,
-        lastPlayerId,
-        ball: remoteBall,
-        speed,
-        serverUpdateRate,
-      } = msg;
+      const { players: remotePlayers, lastPlayerId, ball: remoteBall, serverUpdateRate } = msg;
 
       this.player = new Player(remotePlayers[lastPlayerId].id, remotePlayers[lastPlayerId].pos);
       this.players[this.player.id] = this.player;
-
-      this.layer.add(this.player.node);
-
+      this.activePlayer++;
       this.ball = new Ball(remoteBall);
 
+      // add elements to the layer to be rendered
+      this.layer.add(this.player.node);
       this.layer.add(this.ball.node);
 
+      // show shadow loayer to indicate that the game didn't start yet
       this.layer.add(this.shadowLayer);
+      this.layer.add(this.waiting);
 
       if (remotePlayers.length > 1) {
         this.shadowLayer.hide();
+        this.waiting.hide();
       }
 
       this.serverUpdateRate = serverUpdateRate;
@@ -199,18 +192,23 @@ class Game {
     const { players: remotePlayers, ball: remoteBall } = message;
 
     if (remotePlayers.length > 1) {
+      // hide shadow layer if a game match was done
       this.shadowLayer.hide();
+      this.waiting.hide();
     } else {
       this.shadowLayer.show();
+      this.waiting.show();
+      // if a player disconnection was detect remove the player
       if (this.activePlayer === 2) {
         const existingId = remotePlayers[0].id;
         const removeIndex = existingId === 1 ? 0 : 1;
-        this.players[removeIndex]?.node.remove();
+        this.players[removeIndex]?.destroy();
         this.players[removeIndex] = undefined;
         this.activePlayer--;
       }
     }
 
+    // deal with ball position update
     if (!INTERPOLATION) {
       this.ball.setPos(remoteBall);
     } else {
@@ -218,6 +216,7 @@ class Game {
       this.ball.positionBuffer.push({ timestamp, position: remoteBall });
     }
 
+    // deal with player position updated
     for (const remotePlayer of remotePlayers) {
       if (!this.players[remotePlayer.id]) {
         const newPlayer = new Player(remotePlayer.id, remotePlayer.pos);
@@ -259,49 +258,19 @@ class Game {
   }
 
   private interPolate() {
-    const now = new Date().getTime();
-    const renderTimestamp = now - 1000.0 / this.serverUpdateRate;
     for (const player of this.players) {
       if (!player || player.id === this.player.id) {
         continue;
       }
-
-      const buffer = player.positionBuffer;
-
-      while (buffer.length >= 2 && buffer[1].timestamp <= renderTimestamp) {
-        buffer.shift();
-      }
-
-      if (buffer.length >= 2 && buffer[0].timestamp <= renderTimestamp) {
-        const pos0 = buffer[0].position;
-        const pos1 = buffer[1].position;
-        const t0 = buffer[0].timestamp;
-        const t1 = buffer[1].timestamp;
-
-        const newX = pos0.x + ((pos1.x - pos0.x) * (renderTimestamp - t0)) / (t1 - t0);
-        const newY = pos0.y + ((pos1.y - pos0.y) * (renderTimestamp - t0)) / (t1 - t0);
-
-        player.setPos({ x: newX, y: newY });
-      }
+      player.interpolate(this.serverUpdateRate);
     }
+    this.ball.interpolate(this.serverUpdateRate);
+  }
 
-    const buffer = this.ball.positionBuffer;
-
-    while (buffer.length >= 2 && buffer[1].timestamp <= renderTimestamp) {
-      buffer.shift();
-    }
-
-    if (buffer.length >= 2 && buffer[0].timestamp <= renderTimestamp) {
-      const pos0 = buffer[0].position;
-      const pos1 = buffer[1].position;
-      const t0 = buffer[0].timestamp;
-      const t1 = buffer[1].timestamp;
-
-      const newX = pos0.x + ((pos1.x - pos0.x) * (renderTimestamp - t0)) / (t1 - t0);
-      const newY = pos0.y + ((pos1.y - pos0.y) * (renderTimestamp - t0)) / (t1 - t0);
-
-      this.ball.setPos({ x: newX, y: newY });
-    }
+  private getOscillateOpacity(time: number) {
+    const offset = 1.5;
+    const correction = 0.5;
+    return oscillator(time, 7e-4, 1, 0, offset) * correction;
   }
 
   public run() {
@@ -321,6 +290,7 @@ class Game {
             const points1 = this.players[1] ? this.players[1].points : 0;
             this.scoreBoard.text(`${Math.round(points0)} x ${Math.round(points1)}`);
           }
+          this.waiting.opacity(this.getOscillateOpacity(frame.time));
         }
       }
     }, this.layer);
