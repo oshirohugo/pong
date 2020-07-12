@@ -63,3 +63,16 @@ body {
 .selected-item .selector {
   background-color: #ffffff;
 }
+
+#game-selector {
+  display: grid;
+  justify-items: center;
+}
+
+#game-selector li {
+  cursor: pointer;
+}
+
+#game-selector li :hover {
+  transform: translateY(-5px);
+}
