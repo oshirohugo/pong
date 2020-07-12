@@ -2,7 +2,7 @@
 
 This is a simple pong game. it works together with a pong server. If you want to see it live, go to this [url](TODO)
 
-![pong gif](screenshot.gif)
+![pong gif](pong.gif)
 
 ## Running app
 
