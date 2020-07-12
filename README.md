@@ -21,5 +21,5 @@ yarn dev
 Build:
 
 ```sh
-yarn dev
+yarn build
 ```
