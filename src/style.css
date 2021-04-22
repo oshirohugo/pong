@@ -37,6 +37,10 @@ body {
   display: none;
 }
 
+#connecting-text {
+  display: none;
+}
+
 .selector {
   width: 10px;
   height: 10px;
@@ -45,6 +49,20 @@ body {
   margin-right: 9px;
   border-radius: 50%;
   animation: bounce 0.9s infinite;
+}
+
+.disabled {
+  text-decoration: line-through;
+}
+
+.blinker {
+  animation: blinker 2s linear infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
 }
 
 @keyframes bounce {

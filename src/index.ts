@@ -8,6 +8,7 @@ const multiplayerOption = document.getElementById('multiplayer');
 const singlePlayerOption = document.getElementById('single-player');
 const menu = document.getElementById('menu');
 const container = document.getElementById('container');
+const connectingText = document.getElementById('connecting-text');
 
 const menuKeysListener = new MenuKeysListener({
   onDown: () => {
@@ -32,8 +33,9 @@ const menuKeysListener = new MenuKeysListener({
     if (multiplayerOption?.classList.contains('selected-item')) {
       if (menu) {
         menu.style.display = 'none';
-        if (container) {
-          container.style.display = 'block';
+
+        if (connectingText) {
+          connectingText.style.display = 'block';
         }
 
         const game = new Game();
@@ -41,11 +43,18 @@ const menuKeysListener = new MenuKeysListener({
         const client = new Client(SERVER_HOST, {
           onStart: game.onStart.bind(game),
           onGameUpdate: game.onGameUpdate.bind(game),
+          onConnect: () => {
+            if (connectingText) {
+              connectingText.style.display = 'none';
+            }
+            if (container) {
+              container.style.display = 'block';
+            }
+            game.setOnInput(client.sendState.bind(client));
+            game.run();
+            menuKeysListener.stopListen();
+          },
         });
-
-        game.setOnInput(client.sendState.bind(client));
-        game.run();
-        menuKeysListener.stopListen();
       }
     }
   },

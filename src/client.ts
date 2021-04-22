@@ -4,6 +4,7 @@ import { GameState } from './types';
 type ClientParams = {
   onStart: (msg: GameState) => void;
   onGameUpdate: (msg: GameState) => void;
+  onConnect: () => void;
 };
 
 class Client {
@@ -13,6 +14,8 @@ class Client {
   constructor(serverHost: string, callbacks: ClientParams) {
     this.ws = new WebSocket(serverHost);
     this.callBacks = callbacks;
+
+    this.ws.onopen = this.callBacks.onConnect;
 
     this.ws.onmessage = (ev) => {
       const msg = Message.parse(ev.data);
